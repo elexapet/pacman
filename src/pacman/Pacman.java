@@ -6,17 +6,42 @@
 
 package pacman;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+
 /**
  *
  * @author Petr
  */
 public class Pacman {
 
+          
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        try {
+            final JFrame f = new JFrame();
+
+            f.setTitle("Pac-Man");
+            f.add(new GamePanel());
+            f.setResizable(false);
+            f.setLocationRelativeTo(null);
+            f.pack();
+            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    f.setVisible(true);
+                }
+            });
+        } catch (IOException ex) {
+            Logger.getLogger(Pacman.class.getName()).log(Level.SEVERE, "Images not loaded!", ex);
+        }
     }
     
 }
