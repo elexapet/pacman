@@ -29,8 +29,8 @@ public class Pacman {
             f.setTitle("Pac-Man");
             f.add(new GamePanel());
             f.setResizable(false);
-            f.setLocationRelativeTo(null);
             f.pack();
+            f.setLocationRelativeTo(null);
             f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
             SwingUtilities.invokeLater(new Runnable() {

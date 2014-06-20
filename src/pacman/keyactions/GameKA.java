@@ -8,6 +8,7 @@ package pacman.keyactions;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import pacman.Const.Direction;
 import pacman.GamePanel;
 
 /**
@@ -21,7 +22,7 @@ public class GameKA extends KeyAdapter{
     public GameKA(GamePanel gp) {
         this.gp = gp;
     }
-
+    
     @Override
     public void keyReleased(KeyEvent e) {
         
@@ -36,10 +37,17 @@ public class GameKA extends KeyAdapter{
         }
         else switch(key){
             case KeyEvent.VK_UP:
-                
+                gp.getPlayer().dir=Direction.UP;
+                break;
             case KeyEvent.VK_DOWN:
+                gp.getPlayer().dir=Direction.DOWN;
+                break;
             case KeyEvent.VK_LEFT:
+                gp.getPlayer().dir=Direction.LEFT;
+                break;
             case KeyEvent.VK_RIGHT:
+                gp.getPlayer().dir=Direction.RIGHT;
+                break;
         }
     }
     
