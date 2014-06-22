@@ -18,9 +18,11 @@ import pacman.GamePanel;
 public class GameKA extends KeyAdapter{
     
     final private GamePanel gp; 
+    private boolean paused; 
 
     public GameKA(GamePanel gp) {
         this.gp = gp;
+        paused = false;
     }
     
     @Override
@@ -48,6 +50,14 @@ public class GameKA extends KeyAdapter{
             case KeyEvent.VK_RIGHT:
                 gp.getPlayer().dir=Direction.RIGHT;
                 break;
+            case KeyEvent.VK_SPACE:
+                if (paused) {
+                    gp.timer.start();
+                    paused = false;
+                } else {
+                    gp.timer.stop();
+                    paused = true;
+                }
         }
     }
     

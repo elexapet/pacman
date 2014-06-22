@@ -34,7 +34,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private Timer counterTimer;
     private final Dimension dim;
-    private Image maze;
+    private Image mazeBackground;
     private Player player;
     private boolean inGame;
     private int countDown;
@@ -42,14 +42,7 @@ public class GamePanel extends JPanel implements ActionListener {
     private final Font counterFont;
     private final Font scoreFont;
     private BufferedImage pacman;
-
-    public Dimension getDim() {
-        return dim;
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
+    private byte[][] mazeGrid;
 
     public GamePanel() throws IOException {
         dim = new Dimension(464, 562);
@@ -58,11 +51,26 @@ public class GamePanel extends JPanel implements ActionListener {
         scoreFont = new Font("Helvetica", Font.BOLD, 20);
         loadImages();
         initComponents();
+        initMazeGrid();
         setPreferredSize(dim);
         setBackground(Color.black);
         setDoubleBuffered(true);
         timer = new Timer(40, this);
         timer.start();
+    }
+
+    @Override
+    public int getHeight() {
+        return dim.height;
+    }
+
+    @Override
+    public int getWidth() {
+        return dim.width;
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 
     public void startGame() {
@@ -118,7 +126,7 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void loadImages() throws IOException {
-        maze = ImageIO.read(new File(Const.imagePath + "maze.jpg"));
+        mazeBackground = ImageIO.read(new File(Const.imagePath + "maze.jpg"));
         pacman = ImageIO.read(new File(Const.imagePath + "pacman2.png"));
     }
 
@@ -129,7 +137,7 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawMaze(Graphics g) {
-        g.drawImage(maze, 0, 25, this);
+        g.drawImage(mazeBackground, 0, 25, this);
     }
 
     private void drawScore(Graphics g) {
@@ -143,8 +151,8 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawLives(Graphics g) {
         for (int i = 0; i < player.getLives(); i++) {
             g.drawImage(pacman, Const.padding + Const.liveSize * i,
-                        dim.height - Const.liveSize,
-                        Const.liveSize, Const.liveSize, this);
+                    dim.height - Const.liveSize,
+                    Const.liveSize, Const.liveSize, this);
         }
     }
 
@@ -152,19 +160,24 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setColor(Color.white);
         g.setFont(infoFont);
         int strWidth = SwingUtilities.computeStringWidth(
-                                        getFontMetrics(infoFont),
-                                        Const.introMessage);
+                getFontMetrics(infoFont),
+                Const.introMessage);
         g.drawString(Const.introMessage,
-                    (dim.width - strWidth) / 2, dim.height / 2);
+                (dim.width - strWidth) / 2, dim.height / 2);
     }
 
     private void drawCount(Graphics g) {
         int numWidth = SwingUtilities.computeStringWidth(
-                                        getFontMetrics(counterFont),
-                                        String.valueOf(countDown));
+                getFontMetrics(counterFont),
+                String.valueOf(countDown));
         int numHorAlig = getFontMetrics(counterFont).getDescent();
         g.setColor(Color.white);
         g.setFont(counterFont);
         g.drawString(String.valueOf(countDown), (dim.width - numWidth) / 2, (dim.height + numHorAlig) / 2);
+    }
+
+    private void initMazeGrid() {
+        
+        
     }
 }
