@@ -31,7 +31,8 @@ import pacman.player.Player;
 public class GamePanel extends JPanel implements ActionListener {
 
     public final Timer timer;
-
+    public byte[][] mazeGrid;
+    
     private Timer counterTimer;
     private final Dimension dim;
     private Image mazeBackground;
@@ -42,19 +43,20 @@ public class GamePanel extends JPanel implements ActionListener {
     private final Font counterFont;
     private final Font scoreFont;
     private BufferedImage pacman;
-    private byte[][] mazeGrid;
-
+    
+    
     public GamePanel() throws IOException {
         dim = new Dimension(464, 562);
         infoFont = new Font("Arial", Font.PLAIN, 20);
         counterFont = new Font("Arial", Font.BOLD, 100);
         scoreFont = new Font("Helvetica", Font.BOLD, 20);
+        mazeGrid = Const.MazeGridData.clone();
         loadImages();
         initComponents();
-        initMazeGrid();
         setPreferredSize(dim);
         setBackground(Color.black);
         setDoubleBuffered(true);
+        
         timer = new Timer(40, this);
         timer.start();
     }
@@ -72,7 +74,27 @@ public class GamePanel extends JPanel implements ActionListener {
     public Player getPlayer() {
         return player;
     }
+  
+    public int relativePositionX(int x) {
+        return (int) Math.round((double) (x + Const.gridElemSize / 2
+                - Const.gridOffset) / Const.gridElemSize) - 1;
+    }
 
+    public int relativePositionY(int y) {
+        return (int) Math.round((double) (y + Const.gridElemSize / 2
+                - Const.gridOffset - Const.mazeOffset) / Const.gridElemSize) - 1;
+    }
+
+    public int absolutePositionX(int x) {
+        return Const.gridOffset
+                + Const.gridElemSize * (x+1) - Const.gridElemSize / 2;
+    }
+
+    public int absolutePositionY(int y) {
+        return Const.gridOffset + Const.mazeOffset
+                + Const.gridElemSize * (1+y) - Const.gridElemSize / 2;
+    }
+    
     public void startGame() {
         countDown = 3;
         ActionListener counter = new ActionListener() {
@@ -137,7 +159,15 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawMaze(Graphics g) {
-        g.drawImage(mazeBackground, 0, 25, this);
+        g.drawImage(mazeBackground, 0, Const.mazeOffset, this);
+        for (int i = 0; i < Const.gridHeight; i++) {
+            for (int j = 0; j < Const.gridWidth; j++) {
+                if ((mazeGrid[i][j] & 16) == 16) {
+                    g.setColor(Color.orange);
+                    g.drawOval(absolutePositionX(j), absolutePositionY(i), 4, 4);
+                }
+            }
+        }
     }
 
     private void drawScore(Graphics g) {
@@ -176,8 +206,4 @@ public class GamePanel extends JPanel implements ActionListener {
         g.drawString(String.valueOf(countDown), (dim.width - numWidth) / 2, (dim.height + numHorAlig) / 2);
     }
 
-    private void initMazeGrid() {
-        
-        
-    }
 }

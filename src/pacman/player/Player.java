@@ -24,6 +24,7 @@ public class Player {
 
     public Direction dir;
     public boolean hold;
+    private boolean holdAnim;
 
     private class Pacman {
 
@@ -37,8 +38,10 @@ public class Player {
     private BufferedImage pacman3;
     private int lives;
     private int score;
-    private int positionX;
-    private int positionY;
+    private int absoluteX;
+    private int absoluteY;
+    private int relativeX;
+    private int relativeY;
     private final GamePanel parent;
     private int anim;
     private int count;
@@ -53,9 +56,13 @@ public class Player {
         anim = 1;
         count = 0;
         hold = true;
+        holdAnim = false;
         dir = Direction.LEFT;
-        positionX = (parent.getWidth() - 25) / 2;
-        positionY = 384 + 25 - 25 / 2;
+        relativeX = 14;
+        relativeY = 23;
+        absoluteX = parent.absolutePositionX(relativeX);
+        absoluteY = parent.absolutePositionY(relativeY);
+        System.out.println(parent.relativePositionX(0));
     }
 
     public int getLives() {
@@ -67,32 +74,62 @@ public class Player {
     }
 
     public void draw(Graphics g) {
-        if (!hold) {
-            if ((++count % Const.animDelay) == 0) {
-                anim = ++anim % 3;
-            }
-            if (dir == Direction.LEFT || dir == Direction.RIGHT) {
-                positionX += Const.baseSpeed * dir.value();
-                positionX = (parent.getWidth() + positionX) % parent.getWidth();
-            } else {
-                positionY += Const.baseSpeed * dir.value();
-                positionY = (parent.getHeight() + positionY) % parent.getHeight();
-            }
-        }
+        move();
         switch (anim) {
             case 0:
                 g.drawImage(getImageForDirection(pacman1),
-                        positionX, positionY, 25, 25, parent);
+                        absoluteX - Const.iconSize / 2,
+                        absoluteY - Const.iconSize / 2,
+                        Const.iconSize, Const.iconSize, parent);
                 break;
             case 1:
                 g.drawImage(getImageForDirection(pacman2),
-                        positionX, positionY, 25, 25, parent);
+                        absoluteX - Const.iconSize / 2,
+                        absoluteY - Const.iconSize / 2,
+                        Const.iconSize, Const.iconSize, parent);
                 break;
             case 2:
-                g.drawImage(pacman3, positionX, positionY, 25, 25, parent);
+                g.drawImage(pacman3, absoluteX - Const.iconSize / 2,
+                        absoluteY - Const.iconSize / 2,
+                        Const.iconSize, Const.iconSize, parent);
                 break;
         }
 
+    }
+
+    private void move() {
+        int oldRelativeX = relativeX;
+        int oldRelativeY = relativeY;
+        if (!hold) {
+            if ( !holdAnim &&(++count % Const.animDelay) == 0) {
+                anim = ++anim % 3;
+            }
+            if ((parent.mazeGrid[relativeY][relativeX] & 16) == 16) {
+                score += Const.pointValue;
+                parent.mazeGrid[relativeY][relativeX] -= 16;
+            }
+            if (dir == Direction.LEFT && ((parent.mazeGrid[relativeY][relativeX] & 1) != 1)) {
+                absoluteX += Const.baseSpeed * dir.value();
+                absoluteX = (parent.getWidth() + absoluteX) % parent.getWidth();
+                holdAnim = false;
+            } else if (dir == Direction.RIGHT && ((parent.mazeGrid[relativeY][relativeX] & 4) != 4)) {
+                absoluteX += Const.baseSpeed * dir.value();
+                absoluteX = (parent.getWidth() + absoluteX) % parent.getWidth();
+                holdAnim = false;
+            } else if (dir == Direction.UP && ((parent.mazeGrid[relativeY][relativeX] & 2) != 2)) {
+                absoluteY += Const.baseSpeed * dir.value();
+                absoluteY = (parent.getHeight() + absoluteY) % parent.getHeight();
+                holdAnim = false;
+            } else if (dir == Direction.DOWN && ((parent.mazeGrid[relativeY][relativeX] & 8) != 8)) {
+                absoluteY += Const.baseSpeed * dir.value();
+                absoluteY = (parent.getHeight() + absoluteY) % parent.getHeight();
+                holdAnim = false;
+            } else {
+                holdAnim = true;
+            }
+            relativeX = (Const.gridWidth + parent.relativePositionX(absoluteX)) % Const.gridWidth;
+            relativeY = (Const.gridHeight + parent.relativePositionY(absoluteY)) % Const.gridHeight;
+        }
     }
 
     private void loadImages() throws IOException {
