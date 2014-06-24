@@ -45,7 +45,7 @@ public class Player {
     private final GamePanel parent;
     private int anim;
     private int count;
-
+    
     public Player(GamePanel parent) throws IOException {
         this.parent = parent;
         pacman1 = new Pacman();
@@ -62,7 +62,6 @@ public class Player {
         relativeY = 23;
         absoluteX = parent.absolutePositionX(relativeX);
         absoluteY = parent.absolutePositionY(relativeY);
-        System.out.println(parent.relativePositionX(0));
     }
 
     public int getLives() {
@@ -98,8 +97,6 @@ public class Player {
     }
 
     private void move() {
-        int oldRelativeX = relativeX;
-        int oldRelativeY = relativeY;
         if (!hold) {
             if ( !holdAnim &&(++count % Const.animDelay) == 0) {
                 anim = ++anim % 3;
@@ -133,16 +130,15 @@ public class Player {
     }
 
     private void loadImages() throws IOException {
-        String imagePath = "images/";
-        pacman1.right = ImageIO.read(new File(imagePath + "pacman1.png"));
+        pacman1.right = ImageIO.read(new File(Const.imagePath + "pacman1.png"));
         pacman1.left = rotate(pacman1.right, 180);
         pacman1.up = rotate(pacman1.right, 270);
         pacman1.down = rotate(pacman1.right, 90);
-        pacman2.right = ImageIO.read(new File(imagePath + "pacman2.png"));
+        pacman2.right = ImageIO.read(new File(Const.imagePath + "pacman2.png"));
         pacman2.left = rotate(pacman2.right, 180);
         pacman2.up = rotate(pacman2.right, 270);
         pacman2.down = rotate(pacman2.right, 90);
-        pacman3 = ImageIO.read(new File(imagePath + "pacman3.png"));
+        pacman3 = ImageIO.read(new File(Const.imagePath + "pacman3.png"));
 
     }
 

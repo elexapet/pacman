@@ -21,6 +21,8 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import pacman.ghosts.AbstractGhost;
+import pacman.ghosts.Red;
 import pacman.keyactions.GameKA;
 import pacman.player.Player;
 
@@ -34,16 +36,16 @@ public class GamePanel extends JPanel implements ActionListener {
     public byte[][] mazeGrid;
     
     private Timer counterTimer;
-    private final Dimension dim;
     private Image mazeBackground;
     private Player player;
+    private AbstractGhost redGhost;
     private boolean inGame;
     private int countDown;
+    private BufferedImage pacman;
+    private final Dimension dim;
     private final Font infoFont;
     private final Font counterFont;
     private final Font scoreFont;
-    private BufferedImage pacman;
-    
     
     public GamePanel() throws IOException {
         dim = new Dimension(464, 562);
@@ -86,13 +88,13 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public int absolutePositionX(int x) {
-        return Const.gridOffset
+        return Const.gridOffset +
                 + Const.gridElemSize * (x+1) - Const.gridElemSize / 2;
     }
 
     public int absolutePositionY(int y) {
         return Const.gridOffset + Const.mazeOffset
-                + Const.gridElemSize * (1+y) - Const.gridElemSize / 2;
+                + Const.gridElemSize * (y+1) - Const.gridElemSize / 2;
     }
     
     public void startGame() {
@@ -129,7 +131,7 @@ public class GamePanel extends JPanel implements ActionListener {
             drawScore(g);
             drawLives(g);
             player.draw(g);
-            //drawGhosts(g);
+            drawGhosts(g);
         } else if (countDown > 0) {
             drawMaze(g);
             drawScore(g);
@@ -155,6 +157,7 @@ public class GamePanel extends JPanel implements ActionListener {
     private void initComponents() throws IOException {
         addKeyListener(new GameKA(this));
         player = new Player(this);
+        redGhost = new Red(this);
 
     }
 
@@ -204,6 +207,13 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setColor(Color.white);
         g.setFont(counterFont);
         g.drawString(String.valueOf(countDown), (dim.width - numWidth) / 2, (dim.height + numHorAlig) / 2);
+    }
+
+    private void drawGhosts(Graphics g) {
+        redGhost.draw(g);
+//        blueGhost.draw();
+//        orangeGhost.draw();
+//        pinkGhost.draw();
     }
 
 }
