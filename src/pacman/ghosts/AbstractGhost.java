@@ -1,12 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
+
 package pacman.ghosts;
 
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -17,105 +12,221 @@ import pacman.Const.Direction;
 import pacman.GamePanel;
 
 /**
- *
+ * Rodičovská třída pro duchy
  * @author Petr
  */
- public abstract class AbstractGhost {
+public abstract class AbstractGhost {
 
-    private Const.Direction dir;
-    private Const.Direction nextDir;
     private final BufferedImage ghostImage;
-    private final GamePanel parent;
+    protected final GamePanel game;
+    protected Const.Direction dir;
+    protected Const.Direction nextDir;
     private int absoluteX;
     private int absoluteY;
-    private int relativeX;
-    private int relativeY;
-
-    public AbstractGhost(GamePanel parent) throws IOException {
-        this.parent = parent;
-        ghostImage = ImageIO.read(new File(Const.imagePath + "red.png"));
-        relativeX = 14;
-        relativeY = 14;
-        absoluteX = parent.absolutePositionX(relativeX);
-        absoluteY = parent.absolutePositionY(relativeY);
+    protected int relativeX;
+    protected int relativeY;
+    protected int startX;
+    protected int startY;
+    protected int targetX;
+    protected int targetY;
+    
+    public AbstractGhost(GamePanel game, String imageName) throws IOException {
+        this.game = game;
+        ghostImage = ImageIO.read(new File(Const.imagePath + imageName));
     }
 
     public void draw(Graphics g) {
         g.drawImage(ghostImage, absoluteX - Const.iconSize / 2,
                 absoluteY - Const.iconSize / 2, Const.iconSize,
-                Const.iconSize, parent);
-        move();
-        relativeX = parent.relativePositionX(absoluteX);
-        relativeY = parent.relativePositionY(absoluteY);
-    }
-
-    private void move() {
-
-        if (dir == Direction.LEFT || dir == Direction.RIGHT) {
-            if (isPlanningPoint(relativeX + dir.value(), relativeY)) {
-                planNextTurn();
-            }
-            if (isTurningPointX()) {
-                if (isPlanningPoint(relativeX, relativeY)) {
-                    dir = nextDir;
-                }
-                if (isOneWayTurn()) {
-                    if (canGoUp()) {
-                        dir = dir.UP;
-                    } else {
-                        dir = dir.DOWN;
-                    }
-                }
-                move();
-            } else {
-                absoluteX += dir.value();
-            }
-        } else if (dir == Direction.UP || dir == Direction.DOWN) {
-            if (isPlanningPoint(relativeX, relativeY + dir.value())) {
-                planNextTurn();
-            }
-            if (isDecisionPointY()) {
-                if (isPlanningPoint(relativeX, relativeY)) {
-                    dir = nextDir;
-                }
-                if (isOneWayTurn()) {
-                    if (canGoLeft()) {
-                        dir = dir.LEFT;
-                    } else {
-                        dir = dir.RIGHT;
-                    }
-                }
-                move();
-            } else {
-                absoluteY += dir.value();
-            }
+                Const.iconSize, game);
+        for (int i = 0; i < Const.ghostSpeed; i++) {
+            move();
         }
     }
-
-    private boolean isTurningPointX() {
-        return absoluteX == parent.absolutePositionX(relativeX);
+    
+    public void reset(){
+        nextDir = Const.Direction.UP;
+        relativeX = startX;
+        relativeY = startY;
+        absoluteX = game.absolutePositionX(relativeX);
+        absoluteY = game.absolutePositionY(relativeY);
+        dir = Const.Direction.LEFT;
+    }
+    
+    public void flipDirecition() {
+        if (dir == Direction.LEFT) {
+            dir = Direction.RIGHT;
+        } else if (dir == Direction.RIGHT) {
+            dir = Direction.LEFT;
+        } else if (dir == Direction.UP) {
+            dir = Direction.DOWN;
+        } else {
+            dir = Direction.UP;
+        }
+    }
+    
+    public int getRelativeX() {
+        return relativeX;
     }
 
-    private boolean isDecisionPointY() {
-        return absoluteY == parent.absolutePositionY(relativeY);
+    public int getRelativeY() {
+        return relativeY;
+    }
+    
+    abstract void selectTarget();
+    
+    abstract void selectHome();
+
+    private void alterPosition() {
+        if (dir == Direction.LEFT || dir == Direction.RIGHT) {
+            absoluteX += Const.baseSpeed * dir.value();
+            absoluteX = (game.getWidth() + absoluteX) % game.getWidth();
+            relativeX = (Const.gridWidth + game.relativePositionX(absoluteX))
+                    % Const.gridWidth;
+
+        } else {
+            absoluteY += Const.baseSpeed * dir.value();
+            absoluteY = (game.getHeight() + absoluteY) % game.getHeight();
+            relativeY = (Const.gridHeight + game.relativePositionY(absoluteY))
+                    % Const.gridHeight;
+        }
+    }
+    
+    private void move() {
+        if (dir == Direction.LEFT || dir == Direction.RIGHT) {
+            if (isDecisionPoint()) {
+                int futureX = (Const.gridWidth + relativeX + dir.value()) % Const.gridWidth;
+                if (isPlanningPoint(futureX, relativeY)) {
+                    planNextTurn();
+                }
+                if (isPlanningPoint(relativeX, relativeY)) {
+                    dir = nextDir;
+                } else if (isOneWayTurn()) {
+                    if (canGoUp()) {
+                        dir = Direction.UP;
+                    } else {
+                        dir = Direction.DOWN;
+                    }
+                } 
+            } 
+        }
+        else if (dir == Direction.UP || dir == Direction.DOWN) {
+            if (isDecisionPoint()) {
+                if (isPlanningPoint(relativeX, relativeY + dir.value())) {
+                    planNextTurn();
+                }
+                if (isPlanningPoint(relativeX, relativeY)) {                
+                    dir = nextDir;
+                } else if (isOneWayTurn()) {
+                    if (canGoLeft()) {
+                        dir = Direction.LEFT;
+                    } else {
+                        dir = Direction.RIGHT;
+                    }
+                } 
+            } 
+        }
+        alterPosition();
+    }
+
+    private boolean isDecisionPoint() {
+        return (absoluteX == game.absolutePositionX(relativeX)) 
+                && (absoluteY == game.absolutePositionY(relativeY));
     }
 
     private boolean isPlanningPoint(int x, int y) {
-        return (parent.mazeGrid[y][x] & 15) <= 8;
+        int data = game.mazeGrid.get(y)[x] & 15;
+        return (data == 0) || (data == 1) || (data == 2) || (data == 4) || (data == 8);
     }
 
     private boolean isOneWayTurn() {
-        return ((parent.mazeGrid[relativeY][relativeX] & 15) % 3) == 0;
+        return ((game.mazeGrid.get(relativeY)[relativeX] & 15) % 3) == 0;
     }
 
-    private boolean canGoUp() {
-        return (parent.mazeGrid[relativeY][relativeX] & 2) != 2;
+    protected boolean canGoUp() {
+        return (game.mazeGrid.get(relativeY)[relativeX] & 2) != 2;
     }
 
-    private boolean canGoLeft() {
-        return (parent.mazeGrid[relativeY][relativeX] & 1) != 1;
+    protected boolean canGoDown() {
+        return (game.mazeGrid.get(relativeY)[relativeX] & 8) != 8;
     }
 
-    abstract void planNextTurn();
+    protected boolean canGoLeft() {
+        return (game.mazeGrid.get(relativeY)[relativeX] & 1) != 1;
+    }
 
+    protected boolean canGoRight() {
+        return (game.mazeGrid.get(relativeY)[relativeX] & 4) != 4;
+    }
+
+    private void planNextTurn() {
+        double up = Double.MAX_VALUE;
+        double down = Double.MAX_VALUE;
+        double left = Double.MAX_VALUE;
+        double right = Double.MAX_VALUE;
+        double min;
+        
+        if (game.isScatter()) {
+            selectHome();
+        } else {
+            selectTarget();
+        }
+        //Přicházím zleva nebo zprava
+        if (dir == Const.Direction.LEFT || dir == Const.Direction.RIGHT) {
+            relativeX += dir.value();
+            if (canGoUp()) {
+                up = Math.hypot(targetX - relativeX, targetY - (relativeY - 1));
+            }
+            if (canGoDown()) {
+                down = Math.hypot(targetX - relativeX, targetY - (relativeY + 1));
+            }
+            if (canGoLeft() && dir == Const.Direction.LEFT) {
+                left = Math.hypot(targetX - (relativeX - 1), targetY - relativeY);
+            }
+            if (canGoRight() && dir == Const.Direction.RIGHT) {
+                right = Math.hypot(targetX - (relativeX + 1), targetY - relativeY);
+            }
+            relativeX -= dir.value();
+            //spočti nejraktší přímou cestu z odpovídajícího bodu k cíly
+            if (dir == Const.Direction.LEFT) {
+                min = Math.min(left, Math.min(up, down));
+            } else {
+                min = Math.min(right, Math.min(up, down));
+            }
+            //přicházím ze zdola nebo ze zhora
+        } else {
+            relativeY += dir.value();
+            if (canGoUp() && dir == Const.Direction.UP) {
+                up = Math.hypot(targetX - relativeX, targetY - (relativeY - 1));
+            }
+            if (canGoDown() && dir == Const.Direction.DOWN) {
+                down = Math.hypot(targetX - relativeX, targetY - (relativeY + 1));
+            }
+            if (canGoLeft()) {
+                left = Math.hypot(targetX - (relativeX - 1), targetY - relativeY);
+            }
+            if (canGoRight()) {
+                right = Math.hypot(targetX - (relativeX + 1), targetY - relativeY);
+            }
+            relativeY -= dir.value();
+            //spočti nejraktší přímou cestu z odpovídajícího bodu k cíly
+            if (dir == Const.Direction.UP) {
+                min = Math.min(up, Math.min(left, right));
+            } else {
+                min = Math.min(down, Math.min(left, right));
+            }
+        }
+        //urči budoucí směr na základě nejraktší cesty
+        if (min == up) {
+            nextDir = Const.Direction.UP;
+        } else if (min == down) {
+            nextDir = Const.Direction.DOWN;
+        } else if (min == left) {
+            nextDir = Const.Direction.LEFT;
+        } else {
+            nextDir = Const.Direction.RIGHT;
+        }
+    }
+
+    
 }

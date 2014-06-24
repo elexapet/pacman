@@ -13,7 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 /**
- *
+ * spustitelná metoda pro vytvoření rámu a přidání hlavní herní plochy
  * @author Petr
  */
 public class Pacman {

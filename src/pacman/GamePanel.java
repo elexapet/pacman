@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package pacman;
 
 import java.awt.Color;
@@ -17,49 +13,64 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import pacman.ghosts.AbstractGhost;
+import pacman.ghosts.Blue;
+import pacman.ghosts.Orange;
+import pacman.ghosts.Pink;
 import pacman.ghosts.Red;
 import pacman.keyactions.GameKA;
 import pacman.player.Player;
 
 /**
- *
+ * Hlavní herní plocha řídí chod samotné hry
  * @author Petr
  */
 public class GamePanel extends JPanel implements ActionListener {
 
     public final Timer timer;
-    public byte[][] mazeGrid;
-    
+    public List<byte[]> mazeGrid;
+
     private Timer counterTimer;
     private Image mazeBackground;
     private Player player;
-    private AbstractGhost redGhost;
     private boolean inGame;
     private int countDown;
     private BufferedImage pacman;
     private final Dimension dim;
-    private final Font infoFont;
+    private final Font introFont;
     private final Font counterFont;
     private final Font scoreFont;
-    
+    private boolean scatter;
+    private long time;
+    private int phase;
+    private AbstractGhost redGhost;
+    private AbstractGhost pinkGhost;
+    private AbstractGhost blueGhost;
+    private AbstractGhost orangeGhost;
+
+    /**
+     * konstruktor volá inicializační metody a inicializuje proměnné
+     * @throws IOException
+     */
     public GamePanel() throws IOException {
         dim = new Dimension(464, 562);
-        infoFont = new Font("Arial", Font.PLAIN, 20);
+        introFont = new Font("Arial", Font.PLAIN, 20);
         counterFont = new Font("Arial", Font.BOLD, 100);
         scoreFont = new Font("Helvetica", Font.BOLD, 20);
-        mazeGrid = Const.MazeGridData.clone();
         loadImages();
         initComponents();
         setPreferredSize(dim);
         setBackground(Color.black);
         setDoubleBuffered(true);
-        
-        timer = new Timer(40, this);
+        mazeGrid = new ArrayList<>();
+        timer = new Timer(Const.renderingSpeed, this);
         timer.start();
     }
 
@@ -73,31 +84,86 @@ public class GamePanel extends JPanel implements ActionListener {
         return dim.width;
     }
 
+    public boolean isScatter() {
+        return scatter;
+    }
+
     public Player getPlayer() {
         return player;
     }
-  
+    
+    /**
+     * voláno hráčem pro kontrolu kolize s duchem 
+     * @param relX horizontální pozice hráče
+     * @param relY vertikální pozice hráče
+     * @return hráč byl chycen
+     */
+    public boolean gotCaught(int relX, int relY) {
+        if (relX == redGhost.getRelativeX() && relY == redGhost.getRelativeY()) {
+            return true;
+        } else if (relX == pinkGhost.getRelativeX() && relY == pinkGhost.getRelativeY()) {
+            return true;
+        } else if (relX == blueGhost.getRelativeX() && relY == blueGhost.getRelativeY()) {
+            return true;
+        } else return relX == orangeGhost.getRelativeX() && relY == orangeGhost.getRelativeY();
+    }
+
+    /**
+     *
+     * @param x absolutní horizontální pozice
+     * @return relativní horizontální pozice
+     */
     public int relativePositionX(int x) {
         return (int) Math.round((double) (x + Const.gridElemSize / 2
                 - Const.gridOffset) / Const.gridElemSize) - 1;
     }
 
+    /**
+     *
+     * @param y absolutní vertikální pozice
+     * @return relativní vertikální pozice
+     */
     public int relativePositionY(int y) {
         return (int) Math.round((double) (y + Const.gridElemSize / 2
                 - Const.gridOffset - Const.mazeOffset) / Const.gridElemSize) - 1;
     }
-
+    
+    /**
+     *
+     * @param x relativní horizontální pozice
+     * @return absolutní horizontální pozice
+     */
     public int absolutePositionX(int x) {
-        return Const.gridOffset +
-                + Const.gridElemSize * (x+1) - Const.gridElemSize / 2;
+        return Const.gridOffset
+                + +Const.gridElemSize * (x + 1) - Const.gridElemSize / 2;
     }
 
+    /**
+     *
+     * @param y relativní vertikální pozice
+     * @return absolutní vertikální pozice
+     */
     public int absolutePositionY(int y) {
         return Const.gridOffset + Const.mazeOffset
-                + Const.gridElemSize * (y+1) - Const.gridElemSize / 2;
+                + Const.gridElemSize * (y + 1) - Const.gridElemSize / 2;
     }
-    
+
+    /**
+     * nutné akce při úmrtí hráče
+     */
+    public void death() {
+        resetGhosts();
+    }
+
+    /**
+     * resetuje některé proměnné a po 3s odstartuje hru
+     */
     public void startGame() {
+        byte[][] tmp = new byte[Const.gridHeight][Const.gridWidth];
+        System.arraycopy(Const.MazeGridData,0,tmp,0,Const.MazeGridData.length);
+        mazeGrid = Arrays.asList(tmp);
+        player.reset();
+        resetGhosts();
         countDown = 3;
         ActionListener counter = new ActionListener() {
             @Override
@@ -114,6 +180,21 @@ public class GamePanel extends JPanel implements ActionListener {
         counterTimer.start();
     }
 
+    /**
+     * zastaví hru a počká 1s než skočí do úvodní obrazovky
+     */
+    public void stopGame() {
+        inGame = false;
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+        }
+    }
+
+    /**
+     *
+     * @return true pokud se nacházíme ve hře
+     */
     public boolean isInGame() {
         return inGame;
     }
@@ -127,8 +208,10 @@ public class GamePanel extends JPanel implements ActionListener {
                 RenderingHints.VALUE_TEXT_ANTIALIAS_GASP
         );
         if (inGame) {
+            modeRefresh();
             drawMaze(g);
             drawScore(g);
+            drawInfo(g);
             drawLives(g);
             player.draw(g);
             drawGhosts(g);
@@ -149,6 +232,16 @@ public class GamePanel extends JPanel implements ActionListener {
         repaint();
     }
 
+    private void resetGhosts() {
+        time = 0;
+        phase = 1;
+        scatter = true;
+        redGhost.reset();
+        blueGhost.reset();
+        orangeGhost.reset();
+        pinkGhost.reset();
+    }
+
     private void loadImages() throws IOException {
         mazeBackground = ImageIO.read(new File(Const.imagePath + "maze.jpg"));
         pacman = ImageIO.read(new File(Const.imagePath + "pacman2.png"));
@@ -158,14 +251,16 @@ public class GamePanel extends JPanel implements ActionListener {
         addKeyListener(new GameKA(this));
         player = new Player(this);
         redGhost = new Red(this);
-
+        pinkGhost = new Pink(this);
+        blueGhost = new Blue(this,redGhost);
+        orangeGhost = new Orange(this);
     }
 
     private void drawMaze(Graphics g) {
         g.drawImage(mazeBackground, 0, Const.mazeOffset, this);
         for (int i = 0; i < Const.gridHeight; i++) {
             for (int j = 0; j < Const.gridWidth; j++) {
-                if ((mazeGrid[i][j] & 16) == 16) {
+                if ((mazeGrid.get(i)[j] & 16) == 16) {
                     g.setColor(Color.orange);
                     g.drawOval(absolutePositionX(j), absolutePositionY(i), 4, 4);
                 }
@@ -191,9 +286,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void showIntro(Graphics g) {
         g.setColor(Color.white);
-        g.setFont(infoFont);
+        g.setFont(introFont);
         int strWidth = SwingUtilities.computeStringWidth(
-                getFontMetrics(infoFont),
+                getFontMetrics(introFont),
                 Const.introMessage);
         g.drawString(Const.introMessage,
                 (dim.width - strWidth) / 2, dim.height / 2);
@@ -206,14 +301,76 @@ public class GamePanel extends JPanel implements ActionListener {
         int numHorAlig = getFontMetrics(counterFont).getDescent();
         g.setColor(Color.white);
         g.setFont(counterFont);
-        g.drawString(String.valueOf(countDown), (dim.width - numWidth) / 2, (dim.height + numHorAlig) / 2);
+        g.drawString(String.valueOf(countDown),
+                (dim.width - numWidth) / 2,
+                (dim.height + numHorAlig) / 2);
     }
 
     private void drawGhosts(Graphics g) {
         redGhost.draw(g);
-//        blueGhost.draw();
-//        orangeGhost.draw();
-//        pinkGhost.draw();
+        pinkGhost.draw(g);
+        blueGhost.draw(g);
+        orangeGhost.draw(g);
+    }
+
+    private void modeRefresh() {
+        if (phase == 5) {
+            return;
+        }
+        time += Const.renderingSpeed;
+        if (phase == 1 && time == 7000) {
+            time = 0;
+            scatter = false;
+            flipGhostDirection();
+        } else if (phase == 1 && time == 20000) {
+            time = 0;
+            phase = 2;
+            scatter = true;
+            flipGhostDirection();
+        } else if (phase == 2 && time == 7000) {
+            time = 0;
+            scatter = false;
+            flipGhostDirection();
+        } else if (phase == 2 && time == 20000) {
+            time = 0;
+            phase = 3;
+            scatter = true;
+            flipGhostDirection();
+        } else if (phase == 3 && time == 5000) {
+            time = 0;
+            scatter = false;
+            flipGhostDirection();
+        } else if (phase == 3 && time == 20000) {
+            time = 0;
+            scatter = true;
+            flipGhostDirection();
+        } else if (phase == 4 && time == 5000) {
+            time = 0;
+            phase = 5;
+            scatter = false;
+            flipGhostDirection();
+        }
+    }
+
+    private void drawInfo(Graphics g) {
+        int horAlig = getFontMetrics(introFont).getAscent();
+        int strWidth = SwingUtilities.computeStringWidth(
+                getFontMetrics(introFont),
+                String.valueOf("SCATTER"));
+        g.setColor(Color.white);
+        g.setFont(introFont);
+        if (scatter) {
+            g.drawString("SCATTER", dim.width - (strWidth + 5), horAlig);
+        } else {
+            g.drawString("CHASE", dim.width - (strWidth + 5), horAlig);
+        }
+    }
+
+    private void flipGhostDirection() {
+        redGhost.flipDirecition();
+        pinkGhost.flipDirecition();
+        blueGhost.flipDirecition();
+        orangeGhost.flipDirecition();
     }
 
 }

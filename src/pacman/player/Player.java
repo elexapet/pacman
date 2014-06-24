@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package pacman.player;
 
 import java.awt.Graphics;
@@ -23,16 +19,10 @@ import pacman.GamePanel;
 public class Player {
 
     public Direction dir;
+    public Direction dirRequest;
     public boolean hold;
+    
     private boolean holdAnim;
-
-    private class Pacman {
-
-        BufferedImage left;
-        BufferedImage right;
-        BufferedImage up;
-        BufferedImage down;
-    };
     private final Pacman pacman1;
     private final Pacman pacman2;
     private BufferedImage pacman3;
@@ -42,15 +32,35 @@ public class Player {
     private int absoluteY;
     private int relativeX;
     private int relativeY;
-    private final GamePanel parent;
+    private final GamePanel game;
     private int anim;
     private int count;
-    
-    public Player(GamePanel parent) throws IOException {
-        this.parent = parent;
+
+    private class Pacman {
+
+        BufferedImage left;
+        BufferedImage right;
+        BufferedImage up;
+        BufferedImage down;
+    };
+
+    /**
+     * konstruktor hráče
+     * @param game kontext hry
+     * @throws IOException
+     */
+    public Player(GamePanel game) throws IOException {
+        this.game = game;
         pacman1 = new Pacman();
         pacman2 = new Pacman();
         loadImages();
+    }
+    
+    /**
+     * vyresetování proměnných vztažených k hráči
+     * volá se jen když začína hra
+     */
+    public void reset() {
         lives = 3;
         score = 0;
         anim = 1;
@@ -58,10 +68,16 @@ public class Player {
         hold = true;
         holdAnim = false;
         dir = Direction.LEFT;
-        relativeX = 14;
-        relativeY = 23;
-        absoluteX = parent.absolutePositionX(relativeX);
-        absoluteY = parent.absolutePositionY(relativeY);
+        dirRequest = Direction.LEFT;
+        resetPosition();
+    }
+
+    public int getRelativeX() {
+        return relativeX;
+    }
+
+    public int getRelativeY() {
+        return relativeY;
     }
 
     public int getLives() {
@@ -72,61 +88,105 @@ public class Player {
         return score;
     }
 
+    /**
+     * pohne pacmanem a vykreslí ho
+     * @param g grafický kontext
+     */
     public void draw(Graphics g) {
-        move();
+        for (int i = 0; i < Const.playerSpeed; i++) {
+            move();
+        }
         switch (anim) {
             case 0:
                 g.drawImage(getImageForDirection(pacman1),
                         absoluteX - Const.iconSize / 2,
                         absoluteY - Const.iconSize / 2,
-                        Const.iconSize, Const.iconSize, parent);
+                        Const.iconSize, Const.iconSize, game);
                 break;
             case 1:
                 g.drawImage(getImageForDirection(pacman2),
                         absoluteX - Const.iconSize / 2,
                         absoluteY - Const.iconSize / 2,
-                        Const.iconSize, Const.iconSize, parent);
+                        Const.iconSize, Const.iconSize, game);
                 break;
             case 2:
                 g.drawImage(pacman3, absoluteX - Const.iconSize / 2,
                         absoluteY - Const.iconSize / 2,
-                        Const.iconSize, Const.iconSize, parent);
+                        Const.iconSize, Const.iconSize, game);
                 break;
         }
-
+        if (game.gotCaught(relativeX, relativeY)) {
+            if (--lives == 0) {
+                game.stopGame();
+            }
+            else{
+                resetPosition();
+                game.death();
+            }
+        }
     }
-
+    
+    private void resetPosition(){
+        relativeX = 14;
+        relativeY = 23;
+        absoluteX = game.absolutePositionX(relativeX);
+        absoluteY = game.absolutePositionY(relativeY);
+        if(dir == Direction.UP || dir == Direction.DOWN){
+            dir = Direction.LEFT;
+        }
+    }
+    
     private void move() {
         if (!hold) {
-            if ( !holdAnim &&(++count % Const.animDelay) == 0) {
+            if (!holdAnim && (++count % Const.animDelay) == 0) {
                 anim = ++anim % 3;
             }
-            if ((parent.mazeGrid[relativeY][relativeX] & 16) == 16) {
+            if ((currentMazeData() & 16) == 16) {
                 score += Const.pointValue;
-                parent.mazeGrid[relativeY][relativeX] -= 16;
+                game.mazeGrid.get(relativeY)[relativeX] -= 16;
             }
-            if (dir == Direction.LEFT && ((parent.mazeGrid[relativeY][relativeX] & 1) != 1)) {
-                absoluteX += Const.baseSpeed * dir.value();
-                absoluteX = (parent.getWidth() + absoluteX) % parent.getWidth();
-                holdAnim = false;
-            } else if (dir == Direction.RIGHT && ((parent.mazeGrid[relativeY][relativeX] & 4) != 4)) {
-                absoluteX += Const.baseSpeed * dir.value();
-                absoluteX = (parent.getWidth() + absoluteX) % parent.getWidth();
-                holdAnim = false;
-            } else if (dir == Direction.UP && ((parent.mazeGrid[relativeY][relativeX] & 2) != 2)) {
-                absoluteY += Const.baseSpeed * dir.value();
-                absoluteY = (parent.getHeight() + absoluteY) % parent.getHeight();
-                holdAnim = false;
-            } else if (dir == Direction.DOWN && ((parent.mazeGrid[relativeY][relativeX] & 8) != 8)) {
-                absoluteY += Const.baseSpeed * dir.value();
-                absoluteY = (parent.getHeight() + absoluteY) % parent.getHeight();
-                holdAnim = false;
-            } else {
-                holdAnim = true;
+            if (isDecisionPoint()) {
+                System.out.println(relativeX);
+                if ((dirRequest == Direction.LEFT && canGoLeft())
+                        || (dirRequest == Direction.RIGHT && canGoRight())
+                        || (dirRequest == Direction.UP && canGoUp())
+                        || (dirRequest == Direction.DOWN && canGoDown())) {
+                    dir = dirRequest;
+                    holdAnim = false;
+                }else if(!(dir == Direction.LEFT && canGoLeft())
+                        && !(dir == Direction.RIGHT && canGoRight())
+                        && !(dir == Direction.UP && canGoUp())
+                        && !(dir == Direction.DOWN && canGoDown())){
+                    holdAnim = true;
+                }
             }
-            relativeX = (Const.gridWidth + parent.relativePositionX(absoluteX)) % Const.gridWidth;
-            relativeY = (Const.gridHeight + parent.relativePositionY(absoluteY)) % Const.gridHeight;
+            if(!holdAnim){
+                if (dir == Direction.LEFT) {
+                    absoluteX += Const.baseSpeed * dir.value();
+                    absoluteX = (game.getWidth() + absoluteX) % game.getWidth();
+                } else if (dir == Direction.RIGHT) {
+                    absoluteX += Const.baseSpeed * dir.value();
+                    absoluteX = (game.getWidth() + absoluteX) % game.getWidth();
+                } else if (dir == Direction.UP) {
+                    absoluteY += Const.baseSpeed * dir.value();
+                    absoluteY = (game.getHeight() + absoluteY) % game.getHeight();
+                } else if (dir == Direction.DOWN) {
+                    absoluteY += Const.baseSpeed * dir.value();
+                    absoluteY = (game.getHeight() + absoluteY) % game.getHeight();
+                }
+            }
+            relativeX = (Const.gridWidth + game.relativePositionX(absoluteX)) % Const.gridWidth;
+            relativeY = (Const.gridHeight + game.relativePositionY(absoluteY)) % Const.gridHeight;
         }
+    }
+    
+    private boolean isDecisionPoint() {
+        return (absoluteX == game.absolutePositionX(relativeX)) 
+                && (absoluteY == game.absolutePositionY(relativeY));
+    }
+     
+    private byte currentMazeData(){
+        return game.mazeGrid.get(relativeY)[relativeX];
     }
 
     private void loadImages() throws IOException {
@@ -162,5 +222,21 @@ public class Player {
                 return pacman.down;
         }
         return null;
+    }
+    
+    private boolean canGoUp() {
+        return (currentMazeData() & 2) != 2 ;
+    }
+
+    private boolean canGoDown() {
+        return (currentMazeData() & 8) != 8;
+    }
+
+    private boolean canGoLeft() {
+        return (currentMazeData() & 1) != 1;
+    }
+
+    private boolean canGoRight() {
+        return (currentMazeData() & 4) != 4;
     }
 }

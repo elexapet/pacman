@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 package pacman.ghosts;
 
@@ -13,15 +8,26 @@ import pacman.GamePanel;
  *
  * @author Petr
  */
-public class Red extends AbstractGhost{
+public class Red extends AbstractGhost {
 
     public Red(GamePanel parent) throws IOException {
-        super(parent);
+        super(parent, "red.png");
+        startX = 14;
+        startY = 11;
     }
 
     @Override
-    void planNextTurn() {
-        System.out.println("plannig");
+    public void selectTarget() {
+       targetX = game.getPlayer().getRelativeX();
+       targetY = game.getPlayer().getRelativeY();
     }
+    
+    @Override
+    void selectHome() {
+        targetX = 25;
+        targetY = 0;
+    }
+
+    
     
 }

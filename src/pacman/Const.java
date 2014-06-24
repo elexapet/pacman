@@ -1,12 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package pacman;
 
 /**
- *
+ * Herní a programové konstanty
  * @author Petr
  */
 public interface Const {
@@ -16,14 +12,17 @@ public interface Const {
     public final static int liveSize = 25;
     public final static int padding = 5;
     public final static int pointValue = 10;
-    public final static int animDelay = 2;
-    public final static int baseSpeed = 4;
+    public final static int animDelay = 3;
+    public final static int baseSpeed = 2;
+    public final static int ghostSpeed = 2;
+    public final static int playerSpeed = 3;
     public final static int iconSize = 24;
     public final static int mazeOffset = 25;
     public final static int gridOffset = 8;
     public final static int gridElemSize = 16;
     public final static int gridWidth = 28;
     public final static int gridHeight = 31;
+    public final static int renderingSpeed = 40;
     
     public enum Direction {
 

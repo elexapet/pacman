@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 package pacman.keyactions;
 
@@ -12,7 +7,7 @@ import pacman.Const.Direction;
 import pacman.GamePanel;
 
 /**
- *
+ * Klávesové řízení hry
  * @author Petr
  */
 public class GameKA extends KeyAdapter{
@@ -27,7 +22,7 @@ public class GameKA extends KeyAdapter{
     
     @Override
     public void keyReleased(KeyEvent e) {
-        
+        //zatím není použito
     }
 
     @Override
@@ -39,16 +34,16 @@ public class GameKA extends KeyAdapter{
         }
         else switch(key){
             case KeyEvent.VK_UP:
-                gp.getPlayer().dir=Direction.UP;
+                gp.getPlayer().dirRequest=Direction.UP;
                 break;
             case KeyEvent.VK_DOWN:
-                gp.getPlayer().dir=Direction.DOWN;
+                gp.getPlayer().dirRequest=Direction.DOWN;
                 break;
             case KeyEvent.VK_LEFT:
-                gp.getPlayer().dir=Direction.LEFT;
+                gp.getPlayer().dirRequest=Direction.LEFT;
                 break;
             case KeyEvent.VK_RIGHT:
-                gp.getPlayer().dir=Direction.RIGHT;
+                gp.getPlayer().dirRequest=Direction.RIGHT;
                 break;
             case KeyEvent.VK_SPACE:
                 if (paused) {
