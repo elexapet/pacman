@@ -1,4 +1,3 @@
-
 package pacman.player;
 
 import java.awt.Graphics;
@@ -13,6 +12,8 @@ import pacman.Const.Direction;
 import pacman.GamePanel;
 
 /**
+ * Třída reprezentující objekt hráče stará se o jeho vykreslení, pohyb správným
+ * směrem, jeho skóre, životy případně chycení duchem
  *
  * @author Petr
  */
@@ -21,7 +22,7 @@ public class Player {
     public Direction dir;
     public Direction dirRequest;
     public boolean hold;
-    
+
     private boolean holdAnim;
     private final Pacman pacman1;
     private final Pacman pacman2;
@@ -46,6 +47,7 @@ public class Player {
 
     /**
      * konstruktor hráče
+     *
      * @param game kontext hry
      * @throws IOException
      */
@@ -55,10 +57,9 @@ public class Player {
         pacman2 = new Pacman();
         loadImages();
     }
-    
+
     /**
-     * vyresetování proměnných vztažených k hráči
-     * volá se jen když začína hra
+     * vyresetování proměnných vztažených k hráči volá se jen když začína hra
      */
     public void reset() {
         lives = 3;
@@ -72,29 +73,61 @@ public class Player {
         resetPosition();
     }
 
+    /**
+     *
+     * @return relativní horizontální pozici
+     */
     public int getRelativeX() {
         return relativeX;
     }
 
+    /**
+     *
+     * @return relativní vertikální pozici
+     */
     public int getRelativeY() {
         return relativeY;
     }
 
+    /**
+     *
+     * @return počet životů
+     */
     public int getLives() {
         return lives;
     }
 
+    /**
+     *
+     * @return dosažené scóre
+     */
     public int getScore() {
         return score;
     }
 
     /**
-     * pohne pacmanem a vykreslí ho
+     * zkontoroluje chycení duchem
+     */
+    public void checkColision() {
+        if (game.gotCaught(relativeX, relativeY)) {
+            if (--lives == 0) {
+                game.stopGame();
+            } else {
+                resetPosition();
+                game.death();
+            }
+        }
+    }
+
+    /**
+     * pohne pacmanem určitým směrem a vykreslí ho
+     *
      * @param g grafický kontext
      */
     public void draw(Graphics g) {
         for (int i = 0; i < Const.playerSpeed; i++) {
             move();
+            checkColision();
         }
         switch (anim) {
             case 0:
@@ -115,27 +148,19 @@ public class Player {
                         Const.iconSize, Const.iconSize, game);
                 break;
         }
-        if (game.gotCaught(relativeX, relativeY)) {
-            if (--lives == 0) {
-                game.stopGame();
-            }
-            else{
-                resetPosition();
-                game.death();
-            }
-        }
+
     }
-    
-    private void resetPosition(){
+
+    private void resetPosition() {
         relativeX = 14;
         relativeY = 23;
         absoluteX = game.absolutePositionX(relativeX);
         absoluteY = game.absolutePositionY(relativeY);
-        if(dir == Direction.UP || dir == Direction.DOWN){
+        if (dir == Direction.UP || dir == Direction.DOWN) {
             dir = Direction.LEFT;
         }
     }
-    
+
     private void move() {
         if (!hold) {
             if (!holdAnim && (++count % Const.animDelay) == 0) {
@@ -146,21 +171,20 @@ public class Player {
                 game.mazeGrid.get(relativeY)[relativeX] -= 16;
             }
             if (isDecisionPoint()) {
-                System.out.println(relativeX);
                 if ((dirRequest == Direction.LEFT && canGoLeft())
                         || (dirRequest == Direction.RIGHT && canGoRight())
                         || (dirRequest == Direction.UP && canGoUp())
                         || (dirRequest == Direction.DOWN && canGoDown())) {
                     dir = dirRequest;
                     holdAnim = false;
-                }else if(!(dir == Direction.LEFT && canGoLeft())
+                } else if (!(dir == Direction.LEFT && canGoLeft())
                         && !(dir == Direction.RIGHT && canGoRight())
                         && !(dir == Direction.UP && canGoUp())
-                        && !(dir == Direction.DOWN && canGoDown())){
+                        && !(dir == Direction.DOWN && canGoDown())) {
                     holdAnim = true;
                 }
             }
-            if(!holdAnim){
+            if (!holdAnim) {
                 if (dir == Direction.LEFT) {
                     absoluteX += Const.baseSpeed * dir.value();
                     absoluteX = (game.getWidth() + absoluteX) % game.getWidth();
@@ -179,13 +203,13 @@ public class Player {
             relativeY = (Const.gridHeight + game.relativePositionY(absoluteY)) % Const.gridHeight;
         }
     }
-    
+
     private boolean isDecisionPoint() {
-        return (absoluteX == game.absolutePositionX(relativeX)) 
+        return (absoluteX == game.absolutePositionX(relativeX))
                 && (absoluteY == game.absolutePositionY(relativeY));
     }
-     
-    private byte currentMazeData(){
+
+    private byte currentMazeData() {
         return game.mazeGrid.get(relativeY)[relativeX];
     }
 
@@ -223,9 +247,9 @@ public class Player {
         }
         return null;
     }
-    
+
     private boolean canGoUp() {
-        return (currentMazeData() & 2) != 2 ;
+        return (currentMazeData() & 2) != 2;
     }
 
     private boolean canGoDown() {

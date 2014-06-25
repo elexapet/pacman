@@ -30,20 +30,36 @@ public abstract class AbstractGhost {
     protected int targetX;
     protected int targetY;
     
+    /**
+     * Konstruktor abstraktního ducha
+     * @param game herní kontext
+     * @param imageName název souboru s ikonou ducha
+     * @throws IOException
+     */
     public AbstractGhost(GamePanel game, String imageName) throws IOException {
         this.game = game;
         ghostImage = ImageIO.read(new File(Const.imagePath + imageName));
     }
 
+    /**
+     * Vykreslení ducha, posunutí a případně výpočet
+     * jeho rozhodnutí na další křižovatce.
+     * @param g grafický kontext
+     */
     public void draw(Graphics g) {
-        g.drawImage(ghostImage, absoluteX - Const.iconSize / 2,
+        for (int i = 0; i < Const.ghostSpeed; i++) {
+            g.drawImage(ghostImage, absoluteX - Const.iconSize / 2,
                 absoluteY - Const.iconSize / 2, Const.iconSize,
                 Const.iconSize, game);
-        for (int i = 0; i < Const.ghostSpeed; i++) {
+            
             move();
+            game.getPlayer().checkColision();
         }
     }
     
+    /**
+     * nastavení ducha do výchozí pozice
+     */
     public void reset(){
         nextDir = Const.Direction.UP;
         relativeX = startX;
@@ -53,6 +69,10 @@ public abstract class AbstractGhost {
         dir = Const.Direction.LEFT;
     }
     
+    /**
+     * převrácení směru duchů
+     * voláno při změně módu
+     */
     public void flipDirecition() {
         if (dir == Direction.LEFT) {
             dir = Direction.RIGHT;
@@ -65,16 +85,30 @@ public abstract class AbstractGhost {
         }
     }
     
+    /**
+     *
+     * @return relativní vertikální pozici ducha
+     */
     public int getRelativeX() {
         return relativeX;
     }
 
+    /**
+     *
+     * @return relativní vertikální pozici ducha
+     */
     public int getRelativeY() {
         return relativeY;
     }
     
+    /**
+     * nastavení odpovídajícího cíle
+     */
     abstract void selectTarget();
     
+    /**
+     * nastavení domovského cíle
+     */
     abstract void selectHome();
 
     private void alterPosition() {

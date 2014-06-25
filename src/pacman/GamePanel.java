@@ -1,4 +1,3 @@
-
 package pacman;
 
 import java.awt.Color;
@@ -13,7 +12,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -30,6 +28,7 @@ import pacman.player.Player;
 
 /**
  * Hlavní herní plocha řídí chod samotné hry
+ *
  * @author Petr
  */
 public class GamePanel extends JPanel implements ActionListener {
@@ -41,7 +40,7 @@ public class GamePanel extends JPanel implements ActionListener {
     private Image mazeBackground;
     private Player player;
     private boolean inGame;
-    private int countDown;
+    private int countDownNum;
     private BufferedImage pacman;
     private final Dimension dim;
     private final Font introFont;
@@ -54,9 +53,11 @@ public class GamePanel extends JPanel implements ActionListener {
     private AbstractGhost pinkGhost;
     private AbstractGhost blueGhost;
     private AbstractGhost orangeGhost;
+    private boolean win;
 
     /**
      * konstruktor volá inicializační metody a inicializuje proměnné
+     *
      * @throws IOException
      */
     public GamePanel() throws IOException {
@@ -64,12 +65,13 @@ public class GamePanel extends JPanel implements ActionListener {
         introFont = new Font("Arial", Font.PLAIN, 20);
         counterFont = new Font("Arial", Font.BOLD, 100);
         scoreFont = new Font("Helvetica", Font.BOLD, 20);
+        win = false;
         loadImages();
         initComponents();
         setPreferredSize(dim);
         setBackground(Color.black);
         setDoubleBuffered(true);
-        mazeGrid = new ArrayList<>();
+        mazeGrid = Arrays.asList(Const.MazeGridData);
         timer = new Timer(Const.renderingSpeed, this);
         timer.start();
     }
@@ -84,28 +86,34 @@ public class GamePanel extends JPanel implements ActionListener {
         return dim.width;
     }
 
+    /**
+     *
+     * @return jestli se nachází ve scatter módu
+     */
     public boolean isScatter() {
         return scatter;
     }
 
+    /**
+     *
+     * @return objekt hráče
+     */
     public Player getPlayer() {
         return player;
     }
-    
+
     /**
-     * voláno hráčem pro kontrolu kolize s duchem 
+     * voláno hráčem pro kontrolu kolize s duchem
+     *
      * @param relX horizontální pozice hráče
      * @param relY vertikální pozice hráče
      * @return hráč byl chycen
      */
     public boolean gotCaught(int relX, int relY) {
-        if (relX == redGhost.getRelativeX() && relY == redGhost.getRelativeY()) {
-            return true;
-        } else if (relX == pinkGhost.getRelativeX() && relY == pinkGhost.getRelativeY()) {
-            return true;
-        } else if (relX == blueGhost.getRelativeX() && relY == blueGhost.getRelativeY()) {
-            return true;
-        } else return relX == orangeGhost.getRelativeX() && relY == orangeGhost.getRelativeY();
+        return (relX == redGhost.getRelativeX() && relY == redGhost.getRelativeY())
+                || (relX == pinkGhost.getRelativeX() && relY == pinkGhost.getRelativeY())
+                || (relX == blueGhost.getRelativeX() && relY == blueGhost.getRelativeY())
+                || (relX == orangeGhost.getRelativeX() && relY == orangeGhost.getRelativeY());
     }
 
     /**
@@ -127,7 +135,7 @@ public class GamePanel extends JPanel implements ActionListener {
         return (int) Math.round((double) (y + Const.gridElemSize / 2
                 - Const.gridOffset - Const.mazeOffset) / Const.gridElemSize) - 1;
     }
-    
+
     /**
      *
      * @param x relativní horizontální pozice
@@ -159,25 +167,11 @@ public class GamePanel extends JPanel implements ActionListener {
      * resetuje některé proměnné a po 3s odstartuje hru
      */
     public void startGame() {
-        byte[][] tmp = new byte[Const.gridHeight][Const.gridWidth];
-        System.arraycopy(Const.MazeGridData,0,tmp,0,Const.MazeGridData.length);
-        mazeGrid = Arrays.asList(tmp);
+        
         player.reset();
         resetGhosts();
-        countDown = 3;
-        ActionListener counter = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                if (--countDown < 1) {
-                    inGame = true;
-                    counterTimer.stop();
-                    player.hold = false;
-                }
-                repaint();
-            }
-        };
-        counterTimer = new Timer(1000, counter);
-        counterTimer.start();
+        win = false;
+        countDown();
     }
 
     /**
@@ -189,6 +183,7 @@ public class GamePanel extends JPanel implements ActionListener {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
         }
+        refreshPoints();
     }
 
     /**
@@ -213,16 +208,20 @@ public class GamePanel extends JPanel implements ActionListener {
             drawScore(g);
             drawInfo(g);
             drawLives(g);
-            player.draw(g);
             drawGhosts(g);
-        } else if (countDown > 0) {
+            player.draw(g);
+            checkWin();
+        } else if (countDownNum > 0) {
             drawMaze(g);
             drawScore(g);
             drawLives(g);
             player.draw(g);
             drawCount(g);
+        } else if (win) {
+            showIntro(g, "Vyhrál jsi!");
+            drawScore(g);
         } else {
-            showIntro(g);
+            showIntro(g, Const.introMessage);
         }
         requestFocusInWindow();
     }
@@ -252,7 +251,7 @@ public class GamePanel extends JPanel implements ActionListener {
         player = new Player(this);
         redGhost = new Red(this);
         pinkGhost = new Pink(this);
-        blueGhost = new Blue(this,redGhost);
+        blueGhost = new Blue(this, redGhost);
         orangeGhost = new Orange(this);
     }
 
@@ -284,24 +283,24 @@ public class GamePanel extends JPanel implements ActionListener {
         }
     }
 
-    private void showIntro(Graphics g) {
+    private void showIntro(Graphics g, String str) {
         g.setColor(Color.white);
         g.setFont(introFont);
         int strWidth = SwingUtilities.computeStringWidth(
                 getFontMetrics(introFont),
-                Const.introMessage);
-        g.drawString(Const.introMessage,
+                str);
+        g.drawString(str,
                 (dim.width - strWidth) / 2, dim.height / 2);
     }
 
     private void drawCount(Graphics g) {
         int numWidth = SwingUtilities.computeStringWidth(
                 getFontMetrics(counterFont),
-                String.valueOf(countDown));
+                String.valueOf(countDownNum));
         int numHorAlig = getFontMetrics(counterFont).getDescent();
         g.setColor(Color.white);
         g.setFont(counterFont);
-        g.drawString(String.valueOf(countDown),
+        g.drawString(String.valueOf(countDownNum),
                 (dim.width - numWidth) / 2,
                 (dim.height + numHorAlig) / 2);
     }
@@ -371,6 +370,45 @@ public class GamePanel extends JPanel implements ActionListener {
         pinkGhost.flipDirecition();
         blueGhost.flipDirecition();
         orangeGhost.flipDirecition();
+    }
+
+    private void checkWin() {
+        for (int i = 0; i < Const.gridHeight; i++) {
+            for (int j = 0; j < Const.gridWidth; j++) {
+                if ((mazeGrid.get(i)[j] & 16) == 16) {
+                    return;
+                }
+            }
+        }
+        win = true;
+        stopGame();
+    }
+
+    private void refreshPoints(){
+        for (int i = 0; i < Const.gridHeight; i++) {
+            for (int j = 0; j < Const.gridWidth; j++) {
+                if ((mazeGrid.get(i)[j] & 32) == 32) {
+                    mazeGrid.get(i)[j] |= 16;
+                }
+            }
+        }
+    }
+    
+    private void countDown() {
+        countDownNum = 3;
+        ActionListener counter = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                if (--countDownNum < 1) {
+                    inGame = true;
+                    counterTimer.stop();
+                    player.hold = false;
+                }
+                repaint();
+            }
+        };
+        counterTimer = new Timer(1000, counter);
+        counterTimer.start();
     }
 
 }

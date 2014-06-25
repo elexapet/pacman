@@ -5,7 +5,7 @@ import java.io.IOException;
 import pacman.GamePanel;
 
 /**
- *
+ * 
  * @author Petr
  */
 public class Red extends AbstractGhost {
@@ -17,7 +17,7 @@ public class Red extends AbstractGhost {
     }
 
     @Override
-    public void selectTarget() {
+    void selectTarget() {
        targetX = game.getPlayer().getRelativeX();
        targetY = game.getPlayer().getRelativeY();
     }
