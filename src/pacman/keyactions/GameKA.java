@@ -17,7 +17,6 @@ public class GameKA extends KeyAdapter{
 
     public GameKA(GamePanel gp) {
         this.gp = gp;
-        paused = false;
     }
     
     @Override
@@ -46,12 +45,12 @@ public class GameKA extends KeyAdapter{
                 gp.getPlayer().dirRequest=Direction.RIGHT;
                 break;
             case KeyEvent.VK_SPACE:
-                if (paused) {
+                if (gp.isPaused()) {
                     gp.timer.start();
-                    paused = false;
+                    gp.setPaused(false);
                 } else {
                     gp.timer.stop();
-                    paused = true;
+                    gp.setPaused(true);
                 }
         }
     }

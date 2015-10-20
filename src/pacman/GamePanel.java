@@ -9,6 +9,7 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -49,11 +50,24 @@ public class GamePanel extends JPanel implements ActionListener {
     private boolean scatter;
     private long time;
     private int phase;
+    private int level;
     private AbstractGhost redGhost;
     private AbstractGhost pinkGhost;
     private AbstractGhost blueGhost;
     private AbstractGhost orangeGhost;
     private boolean win;
+    private boolean paused;
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+        if (paused) {
+            repaint();
+        }
+    }
 
     /**
      * konstruktor volá inicializační metody a inicializuje proměnné
@@ -66,6 +80,7 @@ public class GamePanel extends JPanel implements ActionListener {
         counterFont = new Font("Arial", Font.BOLD, 100);
         scoreFont = new Font("Helvetica", Font.BOLD, 20);
         win = false;
+        paused = false;
         loadImages();
         initComponents();
         setPreferredSize(dim);
@@ -161,6 +176,10 @@ public class GamePanel extends JPanel implements ActionListener {
      */
     public void death() {
         resetGhosts();
+        this.dispatchEvent(new KeyEvent(this,
+        KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
+        0,
+        KeyEvent.VK_SPACE));
     }
 
     /**
@@ -168,6 +187,7 @@ public class GamePanel extends JPanel implements ActionListener {
      */
     public void startGame() {
         
+        level = 1;
         player.reset();
         resetGhosts();
         win = false;
@@ -202,7 +222,16 @@ public class GamePanel extends JPanel implements ActionListener {
                 RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_GASP
         );
-        if (inGame) {
+        if (paused){
+            drawMaze(g);
+            drawScore(g);
+            drawInfo(g);
+            drawLives(g);
+            drawGhosts(g);
+            player.draw(g);
+            showIntro(g, "PAUSED");
+        }
+        else if (inGame) {
             modeRefresh();
             drawMaze(g);
             drawScore(g);

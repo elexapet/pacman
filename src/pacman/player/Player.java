@@ -22,13 +22,13 @@ public class Player {
     public Direction dir;
     public Direction dirRequest;
     public boolean hold;
+    public int score;
 
     private boolean holdAnim;
     private final Pacman pacman1;
     private final Pacman pacman2;
     private BufferedImage pacman3;
     private int lives;
-    private int score;
     private int absoluteX;
     private int absoluteY;
     private int relativeX;
@@ -107,16 +107,19 @@ public class Player {
 
     /**
      * zkontoroluje chycení duchem
+     * @return konec hry
      */
-    public void checkColision() {
+    public boolean checkColisionWithGhost() {
         if (game.gotCaught(relativeX, relativeY)) {
             if (--lives == 0) {
                 game.stopGame();
+                return true;
             } else {
                 resetPosition();
                 game.death();
             }
         }
+        return false;
     }
 
     /**
@@ -127,7 +130,7 @@ public class Player {
     public void draw(Graphics g) {
         for (int i = 0; i < Const.playerSpeed; i++) {
             move();
-            checkColision();
+            if(checkColisionWithGhost()) break;
         }
         switch (anim) {
             case 0:

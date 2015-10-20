@@ -53,7 +53,7 @@ public abstract class AbstractGhost {
                 Const.iconSize, game);
             
             move();
-            game.getPlayer().checkColision();
+            if(game.getPlayer().checkColisionWithGhost()) break;
         }
     }
     
